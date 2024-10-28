@@ -36,14 +36,85 @@ class PlaceList(Resource):
     @api.response(400, 'Invalid input data')
     def post(self):
         """Register a new place"""
-        # Placeholder for the logic to register a new place
-        pass
+        place_data = api.payload
+        try:
+            new_place = facade.create_place(place_data)
+
+            # Manually build the dictionary representation of amenities
+            amenities = [
+                {
+                    'id': amenity.id,
+                    'name': amenity.name
+                } for amenity in new_place.amenities
+            ]
+
+            # Manually build the dictionary representation of the owner
+            owner = {
+                'id': new_place.owner.id,
+                'first_name': new_place.owner.first_name,
+                'last_name': new_place.owner.last_name,
+                'email': new_place.owner.email
+            }
+
+            # Build the response dictionary for the place
+            response_data = {
+                'id': new_place.id,
+                'title': new_place.title,
+                'description': new_place.description,
+                'price': new_place.price,
+                'latitude': new_place.latitude,
+                'longitude': new_place.longitude,
+                'owner': owner,
+                'amenities': amenities,
+                'created_at': new_place.created_at.isoformat(),
+                'updated_at': new_place.updated_at.isoformat()
+            }
+
+            return response_data, 201
+        except Exception as e:
+            api.abort(400, str(e))
 
     @api.response(200, 'List of places retrieved successfully')
     def get(self):
         """Retrieve a list of all places"""
-        # Placeholder for logic to return a list of all places
-        pass
+        try:
+            places = facade.get_all_places()
+
+            # Manually serialize each place in the list
+            places_data = []
+            for place in places:
+                amenities = [
+                    {
+                        'id': amenity.id,
+                        'name': amenity.name
+                    } for amenity in place.amenities
+                ]
+
+                owner = {
+                    'id': place.owner.id,
+                    'first_name': place.owner.first_name,
+                    'last_name': place.owner.last_name,
+                    'email': place.owner.email
+                }
+
+                place_data = {
+                    'id': place.id,
+                    'title': place.title,
+                    'description': place.description,
+                    'price': place.price,
+                    'latitude': place.latitude,
+                    'longitude': place.longitude,
+                    'owner': owner,
+                    'amenities': amenities,
+                    'created_at': place.created_at.isoformat(),
+                    'updated_at': place.updated_at.isoformat()
+                }
+
+                places_data.append(place_data)
+
+            return places_data, 200
+        except Exception as e:
+            api.abort(400, str(e))
 
 @api.route('/<place_id>')
 class PlaceResource(Resource):
@@ -51,8 +122,42 @@ class PlaceResource(Resource):
     @api.response(404, 'Place not found')
     def get(self, place_id):
         """Get place details by ID"""
-        # Placeholder for the logic to retrieve a place by ID, including associated owner and amenities
-        pass
+        try:
+            place = facade.get_place(place_id)
+            if not place:
+                return {'error': 'Place not found'}, 404
+
+            # Manually serialize the place
+            amenities = [
+                {
+                    'id': amenity.id,
+                    'name': amenity.name
+                } for amenity in place.amenities
+            ]
+
+            owner = {
+                'id': place.owner.id,
+                'first_name': place.owner.first_name,
+                'last_name': place.owner.last_name,
+                'email': place.owner.email
+            }
+
+            place_data = {
+                'id': place.id,
+                'title': place.title,
+                'description': place.description,
+                'price': place.price,
+                'latitude': place.latitude,
+                'longitude': place.longitude,
+                'owner': owner,
+                'amenities': amenities,
+                'created_at': place.created_at.isoformat(),
+                'updated_at': place.updated_at.isoformat()
+            }
+
+            return place_data, 200
+        except Exception as e:
+            api.abort(400, str(e))
 
     @api.expect(place_model)
     @api.response(200, 'Place updated successfully')
@@ -60,26 +165,42 @@ class PlaceResource(Resource):
     @api.response(400, 'Invalid input data')
     def put(self, place_id):
         """Update a place's information"""
-        # Placeholder for the logic to update a place by ID
-        pass
+        place_data = api.payload
+        try:
+            updated_place = facade.update_place(place_id, place_data)
+            if not updated_place:
+                return {'error': 'Place not found'}, 404
 
+            # Manually build the dictionary representation of amenities
+            amenities = [
+                {
+                    'id': amenity.id,
+                    'name': amenity.name
+                } for amenity in updated_place.amenities
+            ]
 
-# Adding the review model
-review_model = api.model('PlaceReview', {
-    'id': fields.String(description='Review ID'),
-    'text': fields.String(description='Text of the review'),
-    'rating': fields.Integer(description='Rating of the place (1-5)'),
-    'user_id': fields.String(description='ID of the user')
-})
+            # Manually build the dictionary representation of the owner
+            owner = {
+                'id': updated_place.owner.id,
+                'first_name': updated_place.owner.first_name,
+                'last_name': updated_place.owner.last_name,
+                'email': updated_place.owner.email
+            }
 
-place_model = api.model('Place', {
-    'title': fields.String(required=True, description='Title of the place'),
-    'description': fields.String(description='Description of the place'),
-    'price': fields.Float(required=True, description='Price per night'),
-    'latitude': fields.Float(required=True, description='Latitude of the place'),
-    'longitude': fields.Float(required=True, description='Longitude of the place'),
-    'owner_id': fields.String(required=True, description='ID of the owner'),
-    'owner': fields.Nested(user_model, description='Owner of the place'),
-    'amenities': fields.List(fields.Nested(amenity_model), description='List of amenities'),
-    'reviews': fields.List(fields.Nested(review_model), description='List of reviews')
-})
+            # Build the response dictionary for the place
+            response_data = {
+                'id': updated_place.id,
+                'title': updated_place.title,
+                'description': updated_place.description,
+                'price': updated_place.price,
+                'latitude': updated_place.latitude,
+                'longitude': updated_place.longitude,
+                'owner': owner,
+                'amenities': amenities,
+                'created_at': updated_place.created_at.isoformat(),
+                'updated_at': updated_place.updated_at.isoformat()
+            }
+
+            return response_data, 200
+        except Exception as e:
+            return {'error': str(e)}, 400
