@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
-from part2.hbnb.app.models import amenity
-from part2.hbnb.app.services import facade
+from app.models import amenity
+from app.services import facade
 from flask_restx import Namespace, Resource, fields
 from app.services import facade
 
