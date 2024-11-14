@@ -4,7 +4,8 @@ from app.models.users import User
 from app.models.amenities import Amenity
 from app.models.places import Place
 from app.models.reviews import Review
-
+from app.models.user import User
+from app.persistence.repository import SQLAlchemyRepository
 
 class HBnBFacade:
     def __init__(self):
@@ -12,6 +13,7 @@ class HBnBFacade:
         self.place_repo = InMemoryRepository()
         self.review_repo = InMemoryRepository()
         self.amenity_repo = InMemoryRepository()
+        self.user_repo = SQLAlchemyRepository(User)
 
     # USER
     def create_user(self, user_data):
