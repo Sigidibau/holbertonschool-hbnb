@@ -4,6 +4,9 @@ from datetime import datetime
 from hbnb.app.models.basemodel import BaseModel
 from flask_bcrypt import Bcrypt, generate_password_hash, check_password_hash
 import re
+from app import db, bcrypt
+import uuid
+
 
 # This variable is used to validate the email format
 regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
@@ -11,15 +14,14 @@ regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
 flask_bcrypt = Bcrypt()
 
 class User(BaseModel):
-    def __init__(self, first_name, last_name, email, is_admin=False, password=None):
-        super().__init__()
-        self.first_name = self._validate_first_name(first_name)
-        self.last_name = self._validate_last_name(last_name)
-        self.email = self._validate_email(email)
-        self.is_admin = is_admin
-        self.places = []
-        self.password = self.hash_password(password)
+    __tablename__ = 'users'
 
+    first_name = db.Column(db.String(50), nullable=False)
+    last_name = db.Column(db.String(50), nullable=False)
+    email = db.Column(db.String(120), nullable=False, unique=True)
+    password = db.Column(db.String(128), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
+    
     def _validate_email(self, email):
         if not re.fullmatch(regex, email):
             raise ValueError("Invalid email format")
