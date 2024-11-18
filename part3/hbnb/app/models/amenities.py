@@ -1,21 +1,25 @@
 #!/usr/bin/python3
+from hbnb.app.models.basemodel import BaseModel
+from hbnb.app import bcrypt, db
+import uuid
+import re
 
-
-from  hbnb.app.models.basemodel import BaseModel
-from hbnb.app import db, bcrypt
 
 class Amenity(BaseModel):
-    tablename__ = 'Amenity'
+    __tablename__ = 'amenity'
 
-first_name = db.Column(db.String(50), nullable=False)
-last_name = db.Column(db.String(50), nullable=False)
-email = db.Column(db.String(120), nullable=False, unique=True)
-password = db.Column(db.String(128), nullable=False)
-is_admin = db.Column(db.Boolean, default=False)
+    __table_args__ = {'extend_existing': True}
 
-    
+    name = db.Column(db.String(100), nullable=False)
 
-def amenity_validation(self):
-    # Required, maximum length of 50 characters.
-    if not self.name or len(self.name) > 50:
-        raise ValueError("Amenity name must be less than 50 characters")
+    def __init__(self, name):
+        super().__init__()
+        self.name = name
+
+        # Validations
+        self.amenity_validation()
+
+    def amenity_validation(self):
+        # Required, maximum length of 50 characters.
+        if not self.name or len(self.name) > 50:
+            raise ValueError("Amenity name must be less than 50 characters")
