@@ -1,32 +1,29 @@
 #!/usr/bin/python3
-from app.persistence.repository import InMemoryRepository
-from app.models.users import User
-from app.models.amenities import Amenity
-from app.models.places import Place
-from app.models.reviews import Review
-from app.models.user import User
-from app.persistence.repository import SQLAlchemyRepository
+from hbnb.app.models.placeamenity import PlaceAmenity
+from hbnb.app.services.UserRepository import UserRepository
+from hbnb.app.services.amenity_repository import AmenityRepository
+from hbnb.app.services.places_repository import PlaceRepository
+from hbnb.app.services.review_repository import ReviewRepository
+from hbnb.app.services.placeamenity_repository import PlaceAmenityRepository
+
+from hbnb.app.models.users import User
+from hbnb.app.models.amenities import Amenity
+from hbnb.app.models.places import Place
+from hbnb.app.models.reviews import Review
+
 
 class HBnBFacade:
     def __init__(self):
         self.user_repo = UserRepository()
-
-    def create_user(self, user_data):
-        user = User(**user_data)
-        user.hash_password(user_data['password'])
-        self.user_repo.add(user)
-        return user
-
-    def get_user(self, user_id):
-        return self.user_repo.get(user_id)
-
-    def get_user_by_email(self, email):
-        return self.user_repo.get_user_by_email(email)
-
+        self.place_repo = PlaceRepository()
+        self.review_repo = ReviewRepository()
+        self.amenity_repo = AmenityRepository()
+        self.place_amenity_repo = PlaceAmenityRepository()
 
     # USER
     def create_user(self, user_data):
         user = User(**user_data)
+        user.hash_password(user.password)
         self.user_repo.add(user)
         return user
 
@@ -46,7 +43,7 @@ class HBnBFacade:
             return None
         for key, value in user_data.items():
             setattr(user, key, value)
-        self.user_repo.update(user, user_data)
+        self.user_repo.update(user.id, user_data)
         return user
 
     # AMENITY
@@ -57,6 +54,8 @@ class HBnBFacade:
 
     def get_amenity(self, amenity_id):
         amenity = self.amenity_repo.get(amenity_id)
+        if not amenity:
+            raise ValueError(f"Amenity with ID {amenity_id} not found")
         return amenity
 
     def get_all_amenities(self):
@@ -67,32 +66,27 @@ class HBnBFacade:
         amenity = self.amenity_repo.get(amenity_id)
         if not amenity:
             return None
+        allowed_fields = {'name'}
         for key, value in amenity_data.items():
-            setattr(amenity, key, value)
-        self.amenity_repo.update(amenity, amenity_data)
+            if key in allowed_fields:
+                setattr(amenity, key, value)
+
+        self.amenity_repo.update(amenity.id, amenity_data)
         return amenity
 
     # PLACE
     def create_place(self, place_data):
         # Retrieve the owner by ID
-        owner_id = place_data.pop('owner_id')
+        owner_id = place_data.pop('owner_id', None)
+        if not owner_id:
+            raise ValueError("Owner ID is required.")
+
         owner = self.get_user(owner_id)
         if not owner:
             raise Exception('Owner not found')
 
         # Create the Place instance without amenities for now
-        place = Place(owner=owner, **place_data)
-
-        # Retrieve and associate amenities from place_data
-        amenity_ids = place_data.get('amenities', [])
-        amenities = []
-        for amenity_id in amenity_ids:
-            amenity = self.amenity_repo.get(amenity_id)
-            if amenity:
-                amenities.append(amenity)
-
-        # Assign the list of amenities to the Place instance
-        place.amenities = amenities
+        place = Place(owner_id=owner_id, **place_data)
 
         # Add the Place instance to the repository
         self.place_repo.add(place)
@@ -116,19 +110,11 @@ class HBnBFacade:
             owner = self.get_user(place_data['owner_id'])
             if not owner:
                 raise ValueError('Owner not found')
-            place.owner = owner
-
-        # Update amenities if they are provided
-        if 'amenities' in place_data:
-            amenities_ids = place_data['amenities']
-            amenities = [self.amenity_repo.get(amenity_id) for amenity_id in amenities_ids]
-            if None in amenities:
-                raise ValueError('One or more amenities not found')
-            place.amenities = amenities
+            place.user_id = owner
 
         # Update other fields
         for key, value in place_data.items():
-            if key not in ['owner_id', 'amenities']:  # Skip these as they are already handled
+            if key not in ['owner_id']:  # Skip these as they are already handled
                 setattr(place, key, value)
 
         # Update the place in the repository
@@ -151,8 +137,8 @@ class HBnBFacade:
         review = Review(
             text=review_data['text'],
             rating=review_data['rating'],
-            place=place,
-            user=user
+            place_id=place.id,
+            user_id=user.id
         )
 
         # Add the review to the repository
@@ -198,3 +184,23 @@ class HBnBFacade:
         self.review_repo.delete(review_id)
 
         return True
+
+    # PLACE AMENITY
+
+    def create_place_amenity(self, amenity_data):
+
+        place_amenity = PlaceAmenity(
+            place_id=amenity_data['place_id'],
+            amenity_id=amenity_data['amenity_id']
+        )
+
+        # Add the review to the repository
+        self.place_amenity_repo.add(place_amenity)
+
+        return place_amenity
+
+    def get_place_amenity(self):
+        return self.place_amenity_repo.get_all()
+
+    def get_place_amenity_by_place(self, place_id):
+        return self.place_amenity_repo.get_by_attribute('place_id', place_id)
