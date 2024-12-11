@@ -18,8 +18,9 @@ def execute_script(db_path, script_path):
 def initialize_database():
     """Initializes the SQLite database by running schema and seed scripts."""
     base_dir = os.path.dirname(__file__)
-    db_path = "/Users/priscilalopez/holbertonschool-hbnb/instance/development.db"
-    scripts_path = os.path.join(base_dir, "hbnb/app/persistence", "scripts.sql")
+    db_path = "/Users/SGUNDO/holbertonschool-hbnb/instance/development.db"
+    scripts_path = os.path.join(
+        base_dir, "hbnb/app/persistence", "scripts.sql")
     seed_path = os.path.join(base_dir, "hbnb/app/persistence", "seed.sql")
 
     # Check if the database directory exists
